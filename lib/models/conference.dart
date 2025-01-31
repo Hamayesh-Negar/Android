@@ -3,10 +3,9 @@ class Conference {
   final String name;
   final String slug;
   final String? description;
-  final String startDate;
-  final String endDate;
+  final DateTime startDate;
+  final DateTime endDate;
   final bool isActive;
-  final int createdBy;
   final Map<String, dynamic> daysDuration;
 
   Conference({
@@ -17,7 +16,6 @@ class Conference {
     required this.startDate,
     required this.endDate,
     required this.isActive,
-    required this.createdBy,
     required this.daysDuration,
   });
 
@@ -27,10 +25,9 @@ class Conference {
       name: json['name'],
       slug: json['slug'],
       description: json['description'],
-      startDate: json['start_date'],
-      endDate: json['end_date'],
+      startDate: DateTime.parse(json['start_date']),
+      endDate: DateTime.parse(json['end_date']),
       isActive: json['is_active'],
-      createdBy: json['created_by'],
       daysDuration: json['days_duration'],
     );
   }
