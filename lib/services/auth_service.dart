@@ -18,4 +18,15 @@ class AuthService {
     }
     throw Exception('Login failed');
   }
+
+  Future<Map<String, dynamic>> logout() async {
+    final response = await _apiClient.post('/logout/', data: {
+      'Authorization': 'Token ${_apiClient.getToken()}',
+    });
+
+    if (response.statusCode == 200) {
+      return response.data;
+    }
+    throw Exception('Logout failed');
+  }
 }

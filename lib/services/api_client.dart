@@ -27,6 +27,10 @@ class ApiClient {
     _token = token;
   }
 
+  String? getToken() {
+    return _token;
+  }
+
   Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
     return await _dio.get(path, queryParameters: queryParameters);
   }
