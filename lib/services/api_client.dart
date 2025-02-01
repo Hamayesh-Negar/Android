@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
 class ApiClient {
-  static const String baseUrl = 'localhost:8000';
+  static const String baseUrl = 'http://10.0.3.2:8000';
   late Dio _dio;
   String? _token;
 

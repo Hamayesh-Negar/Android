@@ -6,7 +6,7 @@ class AuthService {
   AuthService(this._apiClient);
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _apiClient.post('/login/', data: {
+    final response = await _apiClient.post('/auth/login/', data: {
       'email': email,
       'password': password,
     });
@@ -20,7 +20,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> logout() async {
-    final response = await _apiClient.post('/logout/', data: {
+    final response = await _apiClient.post('/auth/logout/', data: {
       'Authorization': 'Token ${_apiClient.getToken()}',
     });
 
