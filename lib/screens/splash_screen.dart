@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
       final isServerHealthy = await networkService.checkServer();
       if (!isServerHealthy) {
         setState(() {
-          _errorMessage = 'Server is tired :)';
+          _errorMessage = 'Server is tired :(';
           _isLoading = false;
         });
         return;
