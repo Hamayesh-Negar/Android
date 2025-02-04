@@ -310,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       if (value?.isEmpty ?? true) {
                                         return 'Please enter your email';
                                       }
-                                      if (!value!.contains('@')) {
+                                      if (!value!.contains('@') || !value.contains('.')) {
                                         return 'Please enter a valid email';
                                       }
                                       return null;
