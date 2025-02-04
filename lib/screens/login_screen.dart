@@ -236,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Sign in to continue',
+                            'Log in to continue',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white.withOpacity(0.7),
@@ -322,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     if (value?.isEmpty ?? true) {
                                       return 'Please enter your password';
                                     }
-                                    if (value!.length < 6) {
+                                    if (value!.length < 4) {
                                       return 'Password must be at least 6 characters';
                                     }
                                     return null;
@@ -406,9 +406,8 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
 
-                                const SizedBox(height: 32),
+                                const SizedBox(height: 6),
 
-                                // Login Button
                                 SizedBox(
                                   height: 56,
                                   child: ElevatedButton(
@@ -429,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             height: 40,
                                           )
                                         : const Text(
-                                            'Sign In',
+                                            'Login',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
