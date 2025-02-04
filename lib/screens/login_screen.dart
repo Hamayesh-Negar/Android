@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/glass_container.dart';
 
@@ -11,7 +14,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -20,10 +24,24 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  bool _rememberMe = false;
+  late final StorageService _storage;
+
+  Future<void> _loadSavedData() async {
+    setState(() {
+      _rememberMe = _storage.getRememberMe();
+      if (_rememberMe) {
+        _emailController.text = _storage.getEmail() ?? '';
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _storage = StorageService(context.read<SharedPreferences>());
+    _loadSavedData();
+
     _formController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -174,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               child: Column(
                 children: [
                   const SizedBox(height: 48),
-                  // Logo and Welcome Text
+
                   SlideTransition(
                     position: Tween<Offset>(
                       begin: const Offset(0, -0.5),
@@ -209,7 +227,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            'Hamayesh Negar',
+                            'Welcome Back',
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -253,7 +271,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Email Field
                                 TextFormField(
                                   controller: _emailController,
                                   decoration: _getInputDecoration(
@@ -277,17 +294,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ),
                                 const SizedBox(height: 24),
 
-                                // Password Field
                                 TextFormField(
                                   controller: _passwordController,
                                   obscureText: _obscurePassword,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
                                   decoration: _getInputDecoration(
                                     labelText: 'Password',
-                                    prefixIcon: Icons.lock_outlined,
+                                    prefixIcon: Icons.lock_outline,
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscurePassword
@@ -302,19 +314,64 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       },
                                     ),
                                   ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
                                   validator: (value) {
                                     if (value?.isEmpty ?? true) {
                                       return 'Please enter your password';
                                     }
-                                    if (value!.length < 4) {
-                                      return 'Password must be at least 4 characters';
+                                    if (value!.length < 6) {
+                                      return 'Password must be at least 6 characters';
                                     }
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 32),
+                                const SizedBox(height: 24),
 
-                                // Error Message
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (value) {
+                                          setState(() =>
+                                              _rememberMe = value ?? false);
+                                        },
+                                        fillColor: MaterialStateProperty
+                                            .resolveWith<Color>(
+                                          (states) {
+                                            if (states.contains(
+                                                MaterialState.selected)) {
+                                              return AppTheme.primaryColor;
+                                            }
+                                            return Colors.transparent;
+                                          },
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        side: BorderSide(
+                                          color: Colors.white.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Remember me',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+
                                 if (_errorMessage != null)
                                   Container(
                                     padding: const EdgeInsets.symmetric(

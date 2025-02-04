@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/network_service.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
   runApp(
     MultiProvider(
       providers: [
+        Provider<SharedPreferences>.value(value: prefs),
         ChangeNotifierProvider(create: (_) => NetworkService()),
       ],
       child: const MyApp(),
