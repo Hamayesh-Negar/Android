@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hamayesh_negar_android/services/api_client.dart';
+import 'package:hamayesh_negar_android/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/network_service.dart';
@@ -7,9 +9,15 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  final apiClient = ApiClient();
+  final authService = AuthService(apiClient);
+
+  // await authService.tryAutoLogin();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<AuthService>.value(value: authService),
         Provider<SharedPreferences>.value(value: prefs),
         ChangeNotifierProvider(create: (_) => NetworkService()),
       ],

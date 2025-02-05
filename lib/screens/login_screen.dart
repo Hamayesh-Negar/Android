@@ -3,6 +3,8 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../exceptions/auth_exception.dart';
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/glass_container.dart';
@@ -60,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _shakeForm() {
-    _shakeController.forward(from: 0.0);
+    _shakeController.forward();
   }
 
   Future<void> _login() async {
@@ -77,22 +79,37 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      // Login logic here
-      await Future.delayed(const Duration(milliseconds: 5));
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.login(email, password);
+
+      // if (_rememberMe) {
+      //   await _storage.saveLoginData(
+      //     authService.currentUser!.token,
+      //     email,
+      //     true,
+      //   );
+      // }
+
+      if (mounted) {
+        // home screen
+      }
+    } on AuthException catch (e) {
       setState(() {
-        _errorMessage = 'Invalid email or password';
-        _shakeForm();
+        _errorMessage = e.toString();
+        _shakeController.forward();
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Invalid email or password';
-        _shakeForm();
+        _errorMessage = 'An unexpected error occurred';
+        _shakeController.forward();
       });
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        await Future.delayed(const Duration(milliseconds: 50));
+        setState(() => _isLoading = false);
       }
     }
   }
