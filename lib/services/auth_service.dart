@@ -2,14 +2,21 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:hamayesh_negar_android/services/storage_service.dart';
 
 import '../exceptions/auth_exception.dart';
+import '../models/user.dart';
 import 'api_client.dart';
 
 class AuthService extends ChangeNotifier {
   final ApiClient _apiClient;
+  final StorageService _storage;
+  User? _currentUser;
 
-  AuthService(this._apiClient);
+  AuthService(this._apiClient, this._storage);
+
+  User? get currentUser => _currentUser;
+  bool get isLoggedIn => _currentUser != null;
 
   Future<void> login(String email, String password) async {
     try {
@@ -20,7 +27,9 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final token = response.data['token'];
+        final userData = response.data['user'];
         _apiClient.setToken(token);
+        _currentUser = User.fromJson(userData);
         notifyListeners();
       } else {
         throw HttpException('Login failed');
