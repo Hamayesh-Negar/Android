@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hamayesh_negar_android/services/api_client.dart';
 import 'package:hamayesh_negar_android/services/auth_service.dart';
+import 'package:hamayesh_negar_android/services/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/network_service.dart';
@@ -10,7 +11,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final apiClient = ApiClient();
-  final authService = AuthService(apiClient);
+  final storage = StorageService(prefs);
+  final authService = AuthService(apiClient, storage);
 
   // await authService.tryAutoLogin();
 
@@ -18,7 +20,9 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthService>.value(value: authService),
-        Provider<SharedPreferences>.value(value: prefs),
+        Provider<StorageService>.value(
+          value: storage,
+        ),
         ChangeNotifierProvider(create: (_) => NetworkService()),
       ],
       child: const MyApp(),
