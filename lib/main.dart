@@ -4,6 +4,7 @@ import 'package:hamayesh_negar_android/services/auth_service.dart';
 import 'package:hamayesh_negar_android/services/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/home_screen.dart';
 import 'services/network_service.dart';
 import 'screens/splash_screen.dart';
 
@@ -41,7 +42,13 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: Consumer<AuthService>(
+        builder: (context, auth, _) {
+          return auth.isLoggedIn
+              ? const HomeScreen()
+              : const SplashScreen();
+        },
+      ),
     );
   }
 }
