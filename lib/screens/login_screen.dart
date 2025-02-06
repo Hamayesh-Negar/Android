@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hamayesh_negar_android/screens/home_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,16 +86,18 @@ class _LoginScreenState extends State<LoginScreen>
       final authService = Provider.of<AuthService>(context, listen: false);
       await authService.login(email, password);
 
-      // if (_rememberMe) {
-      //   await _storage.saveLoginData(
-      //     authService.currentUser!.token,
-      //     email,
-      //     true,
-      //   );
-      // }
+      if (_rememberMe) {
+        await _storage.saveLoginData(
+          authService.token!,
+          email,
+          true,
+        );
+      }
 
       if (mounted) {
-        // home screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       }
     } on AuthException catch (e) {
       setState(() {

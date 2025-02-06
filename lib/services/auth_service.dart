@@ -11,6 +11,7 @@ import 'api_client.dart';
 class AuthService extends ChangeNotifier {
   final ApiClient _apiClient;
   final StorageService _storage;
+  String? _token;
   User? _currentUser;
 
   AuthService(this._apiClient, this._storage);
@@ -18,6 +19,8 @@ class AuthService extends ChangeNotifier {
   User? get currentUser => _currentUser;
 
   bool get isLoggedIn => _currentUser != null;
+
+  String? get token => _token;
 
   Future<void> login(String email, String password) async {
     try {
