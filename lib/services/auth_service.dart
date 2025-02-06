@@ -16,6 +16,7 @@ class AuthService extends ChangeNotifier {
   AuthService(this._apiClient, this._storage);
 
   User? get currentUser => _currentUser;
+
   bool get isLoggedIn => _currentUser != null;
 
   Future<void> login(String email, String password) async {
@@ -47,14 +48,16 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> logout() async {
-    final response = await _apiClient.post('/auth/logout/', data: {
-      'Authorization': 'Token ${_apiClient.getToken()}',
-    });
-
-    if (response.statusCode == 200) {
-      return response.data;
+  Future<void> logout() async {
+    try {
+      await _apiClient.post('/auth/logout/');
+    } catch (e) {
+      // Ignore logout errors
+    } finally {
+      _apiClient.setToken(null);
+      await _storage.clearLoginData();
+      _currentUser = null;
+      notifyListeners();
     }
-    throw Exception('Logout failed');
   }
 }

@@ -23,7 +23,7 @@ class ApiClient {
     ));
   }
 
-  void setToken(String token) {
+  void setToken(String? token) {
     _token = token;
   }
 
