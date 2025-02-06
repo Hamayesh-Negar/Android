@@ -14,7 +14,7 @@ void main() async {
   final storage = StorageService(prefs);
   final authService = AuthService(apiClient, storage);
 
-  // await authService.tryAutoLogin();
+  await authService.tryAutoLogin();
 
   runApp(
     MultiProvider(

@@ -60,4 +60,21 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> tryAutoLogin() async {
+    final token = _storage.getToken();
+    if (token == null) return false;
+
+    try {
+      _apiClient.setToken(token);
+      final response = await _apiClient.get('/api/v1/user/users/me/');
+      _currentUser = User.fromJson(response.data);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _apiClient.setToken(null);
+      await _storage.clearLoginData();
+      return false;
+    }
+  }
 }
