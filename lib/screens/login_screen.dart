@@ -28,22 +28,10 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   String? _errorMessage;
   bool _rememberMe = false;
-  late final StorageService _storage;
-
-  Future<void> _loadSavedData() async {
-    setState(() {
-      _rememberMe = _storage.getRememberMe();
-      if (_rememberMe) {
-        _emailController.text = _storage.getEmail() ?? '';
-      }
-    });
-  }
 
   @override
   void initState() {
     super.initState();
-    _storage = StorageService(context.read<SharedPreferences>());
-    _loadSavedData();
 
     _formController = AnimationController(
       vsync: this,
@@ -87,10 +75,12 @@ class _LoginScreenState extends State<LoginScreen>
       await authService.login(email, password);
 
       if (_rememberMe) {
-        await _storage.saveLoginData(
+        final storageService =
+            Provider.of<StorageService>(context, listen: false);
+        await storageService.saveLoginData(
           authService.token!,
           email,
-          true,
+          _rememberMe,
         );
       }
 
@@ -330,7 +320,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       if (value?.isEmpty ?? true) {
                                         return 'Please enter your email';
                                       }
-                                      if (!value!.contains('@') || !value.contains('.')) {
+                                      if (!value!.contains('@') ||
+                                          !value.contains('.')) {
                                         return 'Please enter a valid email';
                                       }
                                       return null;

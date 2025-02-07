@@ -30,9 +30,9 @@ class AuthService extends ChangeNotifier {
       });
 
       if (response.statusCode == 200) {
-        final token = response.data['token'];
+        _token = response.data['token'];
+        _apiClient.setToken(_token);
         final userData = response.data['user'];
-        _apiClient.setToken(token);
         _currentUser = User.fromJson(userData);
         notifyListeners();
       } else {

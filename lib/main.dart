@@ -24,6 +24,7 @@ void main() async {
         Provider<StorageService>.value(
           value: storage,
         ),
+        Provider<SharedPreferences>.value(value: prefs),
         ChangeNotifierProvider(create: (_) => NetworkService()),
       ],
       child: const MyApp(),
@@ -44,9 +45,7 @@ class MyApp extends StatelessWidget {
       ),
       home: Consumer<AuthService>(
         builder: (context, auth, _) {
-          return auth.isLoggedIn
-              ? const HomeScreen()
-              : const SplashScreen();
+          return auth.isLoggedIn ? const HomeScreen() : const SplashScreen();
         },
       ),
     );
