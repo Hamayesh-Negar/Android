@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../theme/app_theme.dart';
 
@@ -12,10 +13,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  bool _isFullScreenScanner = false;
   late CameraController _cameraController;
   bool _isCameraInitialized = false;
-  bool _isCameraActive = true;
 
   final List<Map<String, dynamic>> _actions = [
     {
@@ -70,26 +71,20 @@ class _HomeScreenState extends State<HomeScreen> {
       await _cameraController.initialize();
       if (mounted) {
         setState(() => _isCameraInitialized = true);
-        _cameraController.setFocusMode(FocusMode.auto);
       }
     } catch (e) {
       // Handle camera initialization error
     }
   }
 
-  void _setCameraState(bool isActive) async {
-    if (_isCameraInitialized && _isCameraActive != isActive) {
-      setState(() => _isCameraActive = isActive);
-      try {
-        if (isActive) {
-          await _cameraController.resumePreview();
-        } else {
-          await _cameraController.pausePreview();
-        }
-      } catch (e) {
-        // Handle camera control error
-      }
-    }
+  void _openFullScreenScanner() {
+    setState(() => _isFullScreenScanner = true);
+    _cameraController.resumePreview();
+  }
+
+  void _closeFullScreenScanner() {
+    setState(() => _isFullScreenScanner = false);
+    _cameraController.pausePreview();
   }
 
   @override
@@ -100,70 +95,121 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isFullScreenScanner) {
+      return _buildFullScreenScanner();
+    }
+    return _buildHomeScreen();
+  }
+
+  Widget _buildFullScreenScanner() {
     return Scaffold(
       body: Stack(
         children: [
-          // Camera Preview Area
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.5,
-            child: _isCameraInitialized
-                ? CameraPreview(_cameraController)
-                : const Center(child: CircularProgressIndicator()),
-          ),
+          // Camera Preview
+          if (_isCameraInitialized)
+            CameraPreview(_cameraController),
 
-          // QR Frame Overlay
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.15,
-            left: 0,
-            right: 0,
+          // Scanner Overlay
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+            ),
             child: Center(
               child: Container(
-                width: 200,
-                height: 200,
+                width: 250,
+                height: 250,
                 decoration: BoxDecoration(
                   border: Border.all(color: AppTheme.primaryColor, width: 2),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildCorner(true, true),
-                        _buildCorner(true, false),
-                      ],
+                    // Scanner Animation
+                    Positioned.fill(
+                      child: Lottie.asset(
+                        'assets/animations/loading.json',
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildCorner(false, true),
-                        _buildCorner(false, false),
-                      ],
-                    ),
+                    // Corner Decorations
+                    ...List.generate(4, (index) => _buildCorner(index)),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Bottom Sheet Content
+          // Close Button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: IconButton(
+                onPressed: _closeFullScreenScanner,
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeScreen() {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Static Scanner Animation Area
+          Container(
+            height: MediaQuery.of(context).size.height * 0.5,
+            color: AppTheme.darkColor,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // QR Scanner Animation
+                  SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Lottie.asset(
+                      'assets/animations/qr-code.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Pull down to scan',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom Sheet
           NotificationListener<DraggableScrollableNotification>(
             onNotification: (notification) {
-              // Disable camera when sheet is more than 60% up
-              _setCameraState(notification.extent < 0.6);
+              if (notification.extent <= notification.minExtent) {
+                _openFullScreenScanner();
+              }
               return true;
             },
             child: DraggableScrollableSheet(
               initialChildSize: 0.5,
-              minChildSize: 0.5,
+              minChildSize: 0.15,
               maxChildSize: 0.85,
               builder: (context, scrollController) {
                 return Container(
                   decoration: BoxDecoration(
                     color: AppTheme.darkColor,
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
@@ -206,8 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: GridView.builder(
                           controller: scrollController,
                           padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             mainAxisSpacing: 16,
                             crossAxisSpacing: 16,
@@ -238,36 +283,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCorner(bool top, bool left) {
-    return Container(
-      width: 20,
-      height: 20,
-      margin: EdgeInsets.only(
-        left: left ? 8 : 0,
-        right: left ? 0 : 8,
-        top: top ? 8 : 0,
-        bottom: top ? 0 : 8,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          left: left
-              ? BorderSide(color: AppTheme.primaryColor, width: 2)
-              : BorderSide.none,
-          top: top
-              ? BorderSide(color: AppTheme.primaryColor, width: 2)
-              : BorderSide.none,
-          right: !left
-              ? BorderSide(color: AppTheme.primaryColor, width: 2)
-              : BorderSide.none,
-          bottom: !top
-              ? BorderSide(color: AppTheme.primaryColor, width: 2)
-              : BorderSide.none,
-        ),
-        borderRadius: BorderRadius.only(
-          topLeft: left && top ? const Radius.circular(8) : Radius.zero,
-          topRight: !left && top ? const Radius.circular(8) : Radius.zero,
-          bottomLeft: left && !top ? const Radius.circular(8) : Radius.zero,
-          bottomRight: !left && !top ? const Radius.circular(8) : Radius.zero,
+  Widget _buildCorner(int index) {
+    final isTop = index < 2;
+    final isLeft = index.isEven;
+    return Positioned(
+      top: isTop ? -2 : null,
+      bottom: !isTop ? -2 : null,
+      left: isLeft ? -2 : null,
+      right: !isLeft ? -2 : null,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(isTop && isLeft ? 8 : 0),
+            topRight: Radius.circular(isTop && !isLeft ? 8 : 0),
+            bottomLeft: Radius.circular(!isTop && isLeft ? 8 : 0),
+            bottomRight: Radius.circular(!isTop && !isLeft ? 8 : 0),
+          ),
         ),
       ),
     );
