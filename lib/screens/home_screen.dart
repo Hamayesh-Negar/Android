@@ -15,8 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late CameraController _cameraController;
   bool _isCameraInitialized = false;
-  final PageController _bannerController = PageController();
-  int _currentBannerIndex = 0;
+  bool _isCameraActive = true;
 
   final List<Map<String, dynamic>> _actions = [
     {
@@ -55,21 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
-    // Auto-scroll banner
-    Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_currentBannerIndex < 2) {
-        _currentBannerIndex++;
-      } else {
-        _currentBannerIndex = 0;
-      }
-      if (_bannerController.hasClients) {
-        _bannerController.animateToPage(
-          _currentBannerIndex,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
   }
 
   Future<void> _initializeCamera() async {
@@ -86,16 +70,31 @@ class _HomeScreenState extends State<HomeScreen> {
       await _cameraController.initialize();
       if (mounted) {
         setState(() => _isCameraInitialized = true);
+        _cameraController.setFocusMode(FocusMode.auto);
       }
     } catch (e) {
       // Handle camera initialization error
     }
   }
 
+  void _setCameraState(bool isActive) async {
+    if (_isCameraInitialized && _isCameraActive != isActive) {
+      setState(() => _isCameraActive = isActive);
+      try {
+        if (isActive) {
+          await _cameraController.resumePreview();
+        } else {
+          await _cameraController.pausePreview();
+        }
+      } catch (e) {
+        // Handle camera control error
+      }
+    }
+  }
+
   @override
   void dispose() {
     _cameraController.dispose();
-    _bannerController.dispose();
     super.dispose();
   }
 
@@ -149,124 +148,90 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Bottom Sheet Content
-          DraggableScrollableSheet(
-            initialChildSize: 0.5,
-            minChildSize: 0.5,
-            maxChildSize: 0.85,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.darkColor,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Drag Handle
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-
-                    // Banner Section
-                    SizedBox(
-                      height: 120,
-                      child: PageView.builder(
-                        controller: _bannerController,
-                        onPageChanged: (index) {
-                          setState(() => _currentBannerIndex = index);
-                        },
-                        itemCount: 3,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.primaryColor.withOpacity(0.8),
-                                  AppTheme.accentColor.withOpacity(0.6),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Banner ${index + 1}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // Banner Indicators
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(3, (index) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 12,
-                          ),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentBannerIndex == index
-                                ? AppTheme.primaryColor
-                                : Colors.white.withOpacity(0.3),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    // Grid Menu
-                    Expanded(
-                      child: GridView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 1,
-                        ),
-                        itemCount: _actions.length,
-                        itemBuilder: (context, index) {
-                          final action = _actions[index];
-                          return _buildActionButton(
-                            icon: action['icon'],
-                            label: action['title'],
-                            color: action['color'],
-                            onTap: () {
-                              // Handle action tap
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
+          NotificationListener<DraggableScrollableNotification>(
+            onNotification: (notification) {
+              // Disable camera when sheet is more than 60% up
+              _setCameraState(notification.extent < 0.6);
+              return true;
             },
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.5,
+              minChildSize: 0.5,
+              maxChildSize: 0.85,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkColor,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Drag Handle
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+
+                      // Title
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        child: Text(
+                          'Choose Action',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      // Grid Menu
+                      Expanded(
+                        child: GridView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1,
+                          ),
+                          itemCount: _actions.length,
+                          itemBuilder: (context, index) {
+                            final action = _actions[index];
+                            return _buildActionButton(
+                              icon: action['icon'],
+                              label: action['title'],
+                              color: action['color'],
+                              onTap: () {
+                                // Handle action tap
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
