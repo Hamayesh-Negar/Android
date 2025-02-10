@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/glass_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,54 +105,186 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildFullScreenScanner() {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera Preview
+          // Full Screen Camera Preview
           if (_isCameraInitialized)
-            CameraPreview(_cameraController),
-
-          // Scanner Overlay
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+            Positioned.fill(
+              child: CameraPreview(_cameraController),
             ),
-            child: Center(
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.primaryColor, width: 2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    // Scanner Animation
-                    Positioned.fill(
-                      child: Lottie.asset(
-                        'assets/animations/loading.json',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    // Corner Decorations
-                    ...List.generate(4, (index) => _buildCorner(index)),
+
+          // Overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
                   ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                ),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 0.0, sigmaY: 0.0),
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
                 ),
               ),
             ),
           ),
 
-          // Close Button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: IconButton(
-                onPressed: _closeFullScreenScanner,
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 30,
+          // Scanner Area
+          Center(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: MediaQuery.of(context).size.width * 0.8,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 2,
                 ),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Stack(
+                children: [
+                  // Scan Animation
+                  Positioned.fill(
+                    child: Lottie.asset(
+                      'assets/animations/qr-scan-line.json',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+
+                  // Corners
+                  ...List.generate(4, (index) {
+                    final isTop = index < 2;
+                    final isLeft = index.isEven;
+                    return Positioned(
+                      top: isTop ? 0 : null,
+                      bottom: !isTop ? 0 : null,
+                      left: isLeft ? 0 : null,
+                      right: !isLeft ? 0 : null,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: isTop
+                                ? const BorderSide(
+                                    color: Colors.white, width: 3)
+                                : BorderSide.none,
+                            bottom: !isTop
+                                ? const BorderSide(
+                                    color: Colors.white, width: 3)
+                                : BorderSide.none,
+                            left: isLeft
+                                ? const BorderSide(
+                                    color: Colors.white, width: 3)
+                                : BorderSide.none,
+                            right: !isLeft
+                                ? const BorderSide(
+                                    color: Colors.white, width: 3)
+                                : BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+
+          // Header with Close Button
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 16,
+                bottom: 16,
+                left: 16,
+                right: 16,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Close Button
+                  GlassContainer(
+                    padding: const EdgeInsets.all(12),
+                    child: GestureDetector(
+                      onTap: _closeFullScreenScanner,
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  // Flash Button
+                  GlassContainer(
+                    padding: const EdgeInsets.all(12),
+                    child: GestureDetector(
+                      onTap: () async {
+                        try {
+                          final current = _cameraController.value.flashMode;
+                          await _cameraController.setFlashMode(
+                            current == FlashMode.torch
+                                ? FlashMode.off
+                                : FlashMode.torch,
+                          );
+                          setState(() {}); // Refresh UI
+                        } catch (e) {
+                          // Handle flash error
+                        }
+                      },
+                      child: Icon(
+                        _cameraController.value.flashMode == FlashMode.torch
+                            ? Icons.flash_on
+                            : Icons.flash_off,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom Text
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 32,
+            left: 0,
+            right: 0,
+            child: Column(
+              children: [
+                const Text(
+                  'Place QR code inside the frame',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Scanning will start automatically',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ],
@@ -209,7 +343,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 return Container(
                   decoration: BoxDecoration(
                     color: AppTheme.darkColor,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
@@ -252,7 +387,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: GridView.builder(
                           controller: scrollController,
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             mainAxisSpacing: 16,
                             crossAxisSpacing: 16,
