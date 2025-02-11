@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'dart:ui';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
-
 import '../theme/app_theme.dart';
 import '../theme/glass_container.dart';
 
@@ -92,16 +90,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _openFullScreenScanner() {
-    setState(() => _isFullScreenScanner = true);
-    _cameraController.resumePreview();
-  }
-
-  void _closeFullScreenScanner() {
-    setState(() => _isFullScreenScanner = false);
-    _cameraController.pausePreview();
-  }
-
   @override
   void dispose() {
     _cameraController.dispose();
@@ -115,6 +103,232 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return _buildFullScreenScanner();
     }
     return _buildHomeScreen();
+  }
+
+  Widget _buildHomeScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E1E1E),
+      body: Stack(
+        children: [
+          // Scanner Area Background
+          Container(
+            height: MediaQuery.of(context).size.height * 0.6,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF2C3E50),
+                  Color(0xFF3498DB),
+                ],
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Scanner Content
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // QR Scanner Frame
+                      Container(
+                        width: 220,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Lottie Animation
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Lottie.asset(
+                                  'assets/animations/qr-scan.json',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+
+                            // Scan Line Animation
+                            AnimatedBuilder(
+                              animation: _scannerAnimation,
+                              builder: (context, child) {
+                                return Positioned(
+                                  top: 20 + (160 * _scannerAnimation.value),
+                                  left: 20,
+                                  right: 20,
+                                  child: Container(
+                                    height: 2,
+                                    decoration: BoxDecoration(
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.blue.withOpacity(0.5),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.blue.withOpacity(0),
+                                          Colors.blue,
+                                          Colors.blue.withOpacity(0),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Pull down to scan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Sheet with actual content
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: MediaQuery.of(context).size.height * 0.4,
+            // 40% of screen height
+            child: NotificationListener<DraggableScrollableNotification>(
+              onNotification: (notification) {
+                if (notification.extent <= 0.15) {
+                  HapticFeedback.mediumImpact();
+                  setState(() => _isFullScreenScanner = true);
+                }
+                return true;
+              },
+              child: DraggableScrollableSheet(
+                initialChildSize: 1.0, // Takes full height of its container
+                minChildSize: 0.25, // Can be pulled down to 25% of sheet height
+                maxChildSize: 1.0,
+                builder: (context, scrollController) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(30)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      physics: const ClampingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          // Pull Indicator
+                          Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+
+                          // Title with Icon
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.grid_view_rounded,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Quick Actions',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Grid Menu
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: _actions.length,
+                            itemBuilder: (context, index) {
+                              final action = _actions[index];
+                              return _buildActionButton(
+                                icon: action['icon'],
+                                label: action['title'],
+                                gradient: action['gradient'],
+                                onTap: () {
+                                  // Handle action
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFullScreenScanner() {
@@ -215,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // Header with Close Button
+          // Header Controls
           Positioned(
             top: 0,
             left: 0,
@@ -234,7 +448,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   GlassContainer(
                     padding: const EdgeInsets.all(12),
                     child: GestureDetector(
-                      onTap: _closeFullScreenScanner,
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        setState(() => _isFullScreenScanner = false);
+                      },
                       child: const Icon(
                         Icons.close,
                         color: Colors.white,
@@ -247,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(12),
                     child: GestureDetector(
                       onTap: () async {
+                        HapticFeedback.mediumImpact();
                         try {
                           final current = _cameraController.value.flashMode;
                           await _cameraController.setFlashMode(
@@ -254,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ? FlashMode.off
                                 : FlashMode.torch,
                           );
-                          setState(() {}); // Refresh UI
+                          setState(() {});
                         } catch (e) {
                           // Handle flash error
                         }
@@ -299,262 +517,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   textAlign: TextAlign.center,
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHomeScreen() {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Beautiful Background for Scanner Area
-          Container(
-            height: MediaQuery.of(context).size.height * 0.5,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF1A237E),
-                  const Color(0xFF0D47A1).withOpacity(0.9),
-                ],
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Animated Background Patterns
-                ...List.generate(3, (index) {
-                  return Positioned(
-                    top: -50 + (index * 100),
-                    right: -50 + (index * 30),
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blue.withOpacity(0.1),
-                            Colors.blue.withOpacity(0),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                }),
-
-                // Scanner Content
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // QR Scanner Animation
-                      Container(
-                        width: 220,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
-                            width: 2,
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Lottie Animation
-                            Positioned.fill(
-                              child: Lottie.asset(
-                                'assets/animations/qr-scan.json',
-                                fit: BoxFit.contain,
-                                repeat: true,
-                              ),
-                            ),
-                            // Animated Scanner Line
-                            AnimatedBuilder(
-                              animation: _scannerAnimation,
-                              builder: (context, child) {
-                                return Positioned(
-                                  top: 20 + (160 * _scannerAnimation.value),
-                                  left: 20,
-                                  right: 20,
-                                  child: Container(
-                                    height: 2,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.blue.withOpacity(0),
-                                          Colors.blue.withOpacity(0.8),
-                                          Colors.blue.withOpacity(0),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            // Corner Decorations
-                            ...List.generate(4, (index) {
-                              final isTop = index < 2;
-                              final isLeft = index.isEven;
-                              return Positioned(
-                                top: isTop ? 0 : null,
-                                bottom: !isTop ? 0 : null,
-                                left: isLeft ? 0 : null,
-                                right: !isLeft ? 0 : null,
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: isLeft
-                                          ? Alignment.centerRight
-                                          : Alignment.centerLeft,
-                                      end: isLeft
-                                          ? Alignment.centerLeft
-                                          : Alignment.centerRight,
-                                      colors: [
-                                        Colors.white.withOpacity(0.8),
-                                        Colors.white.withOpacity(0.2),
-                                      ],
-                                    ),
-                                  ),
-                                  child: CustomPaint(
-                                    painter: CornerPainter(
-                                      isTop: isTop,
-                                      isLeft: isLeft,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Instruction Text
-                      Text(
-                        'Pull down to scan QR code',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Bottom Sheet
-          NotificationListener<DraggableScrollableNotification>(
-            onNotification: (notification) {
-              if (notification.extent <= notification.minExtent) {
-                _openFullScreenScanner();
-              }
-              return true;
-            },
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.5,
-              minChildSize: 0.15,
-              maxChildSize: 0.85,
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(30)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Drag Handle with Animation
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 12),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-
-                      // Title with Icon
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.grid_view_rounded,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Quick Actions',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Grid Menu
-                      Expanded(
-                        child: GridView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 1,
-                          ),
-                          itemCount: _actions.length,
-                          itemBuilder: (context, index) {
-                            final action = _actions[index];
-                            return _buildActionButton(
-                              icon: action['icon'],
-                              label: action['title'],
-                              gradient: action['gradient'],
-                              onTap: () {
-                                // Handle action
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
           ),
         ],
@@ -618,43 +580,4 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-}
-
-class CornerPainter extends CustomPainter {
-  final bool isTop;
-  final bool isLeft;
-
-  CornerPainter({required this.isTop, required this.isLeft});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final path = Path();
-    if (isTop && isLeft) {
-      path.moveTo(size.width, 0);
-      path.lineTo(0, 0);
-      path.lineTo(0, size.height);
-    } else if (isTop && !isLeft) {
-      path.moveTo(0, 0);
-      path.lineTo(size.width, 0);
-      path.lineTo(size.width, size.height);
-    } else if (!isTop && isLeft) {
-      path.moveTo(0, 0);
-      path.lineTo(0, size.height);
-      path.lineTo(size.width, size.height);
-    } else {
-      path.moveTo(size.width, 0);
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
