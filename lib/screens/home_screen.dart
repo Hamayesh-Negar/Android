@@ -212,119 +212,127 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // Bottom Sheet with actual content
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: MediaQuery.of(context).size.height * 0.4,
-            // 40% of screen height
-            child: NotificationListener<DraggableScrollableNotification>(
-              onNotification: (notification) {
-                if (notification.extent <= 0.15) {
-                  HapticFeedback.mediumImpact();
-                  setState(() => _isFullScreenScanner = true);
-                }
-                return true;
-              },
-              child: DraggableScrollableSheet(
-                initialChildSize: 1.0, // Takes full height of its container
-                minChildSize: 0.25, // Can be pulled down to 25% of sheet height
-                maxChildSize: 1.0,
-                builder: (context, scrollController) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(30)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, -5),
-                        ),
-                      ],
+          // Bottom Sheet
+          DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.15,
+            maxChildSize: 0.6,
+            snap: true,
+            snapSizes: const [0.6, 0.15],
+            builder: (context, scrollController) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(30)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
                     ),
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      physics: const ClampingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          // Pull Indicator
-                          Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(2),
+                  ],
+                ),
+                child: NotificationListener<DraggableScrollableNotification>(
+                  onNotification: (notification) {
+                    if (notification.extent <= 0.2) {
+                      HapticFeedback.mediumImpact();
+                      setState(() => _isFullScreenScanner = true);
+                    }
+                    return true;
+                  },
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    physics: const ClampingScrollPhysics(),
+                    slivers: [
+                      // Header
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            // Pull Indicator
+                            Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
                             ),
-                          ),
 
-                          // Title with Icon
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
+                            // Title with Icon
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Icon(
+                                      Icons.grid_view_rounded,
+                                      color: Colors.blue,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    'Quick Actions',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.grid_view_rounded,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Quick Actions',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
+                        ),
+                      ),
 
-                          // Grid Menu
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(20),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 1,
-                            ),
-                            itemCount: _actions.length,
-                            itemBuilder: (context, index) {
+                      // Grid
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
                               final action = _actions[index];
                               return _buildActionButton(
                                 icon: action['icon'],
                                 label: action['title'],
                                 gradient: action['gradient'],
                                 onTap: () {
+                                  HapticFeedback.lightImpact();
                                   // Handle action
                                 },
                               );
                             },
+                            childCount: _actions.length,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
+
+                      // Bottom Padding
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -530,52 +538,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required List<Color> gradient,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradient,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradient,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: gradient[0].withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: gradient[0].withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 28,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
