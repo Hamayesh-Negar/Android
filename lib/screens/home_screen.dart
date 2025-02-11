@@ -19,37 +19,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isFullScreenScanner = false;
   late CameraController _cameraController;
   bool _isCameraInitialized = false;
+  late AnimationController _animationController;
+  late Animation<double> _scannerAnimation;
 
   final List<Map<String, dynamic>> _actions = [
     {
       'title': 'Task Manager',
       'icon': Icons.assignment_outlined,
-      'color': Colors.blue,
+      'gradient': [const Color(0xFF4158D0), const Color(0xFFC850C0)],
     },
     {
       'title': 'Categories',
       'icon': Icons.category_outlined,
-      'color': Colors.orange,
+      'gradient': [const Color(0xFFFF8008), const Color(0xFFFFC837)],
     },
     {
       'title': 'People',
       'icon': Icons.people_outline,
-      'color': Colors.purple,
+      'gradient': [const Color(0xFF3633A8), const Color(0xFF6C4BB4)],
     },
     {
       'title': 'Statistics',
       'icon': Icons.bar_chart,
-      'color': Colors.green,
+      'gradient': [const Color(0xFF00B4DB), const Color(0xFF0083B0)],
     },
     {
       'title': 'Settings',
       'icon': Icons.settings_outlined,
-      'color': Colors.blueGrey,
+      'gradient': [const Color(0xFF434343), const Color(0xFF000000)],
     },
     {
       'title': 'Reports',
       'icon': Icons.summarize_outlined,
-      'color': Colors.red,
+      'gradient': [const Color(0xFFED213A), const Color(0xFF93291E)],
     },
   ];
 
@@ -57,6 +59,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeCamera();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _scannerAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _animationController.repeat(reverse: true);
   }
 
   Future<void> _initializeCamera() async {
@@ -92,6 +105,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _cameraController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -296,34 +310,144 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
-          // Static Scanner Animation Area
+          // Beautiful Background for Scanner Area
           Container(
             height: MediaQuery.of(context).size.height * 0.5,
-            color: AppTheme.darkColor,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // QR Scanner Animation
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Lottie.asset(
-                      'assets/animations/qr-code.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Pull down to scan',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 16,
-                    ),
-                  ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1A237E),
+                  const Color(0xFF0D47A1).withOpacity(0.9),
                 ],
               ),
+            ),
+            child: Stack(
+              children: [
+                // Animated Background Patterns
+                ...List.generate(3, (index) {
+                  return Positioned(
+                    top: -50 + (index * 100),
+                    right: -50 + (index * 30),
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.blue.withOpacity(0.1),
+                            Colors.blue.withOpacity(0),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  );
+                }),
+
+                // Scanner Content
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // QR Scanner Animation
+                      Container(
+                        width: 220,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 2,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Lottie Animation
+                            Positioned.fill(
+                              child: Lottie.asset(
+                                'assets/animations/qr-scan.json',
+                                fit: BoxFit.contain,
+                                repeat: true,
+                              ),
+                            ),
+                            // Animated Scanner Line
+                            AnimatedBuilder(
+                              animation: _scannerAnimation,
+                              builder: (context, child) {
+                                return Positioned(
+                                  top: 20 + (160 * _scannerAnimation.value),
+                                  left: 20,
+                                  right: 20,
+                                  child: Container(
+                                    height: 2,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.blue.withOpacity(0),
+                                          Colors.blue.withOpacity(0.8),
+                                          Colors.blue.withOpacity(0),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            // Corner Decorations
+                            ...List.generate(4, (index) {
+                              final isTop = index < 2;
+                              final isLeft = index.isEven;
+                              return Positioned(
+                                top: isTop ? 0 : null,
+                                bottom: !isTop ? 0 : null,
+                                left: isLeft ? 0 : null,
+                                right: !isLeft ? 0 : null,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: isLeft
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      end: isLeft
+                                          ? Alignment.centerLeft
+                                          : Alignment.centerRight,
+                                      colors: [
+                                        Colors.white.withOpacity(0.8),
+                                        Colors.white.withOpacity(0.2),
+                                      ],
+                                    ),
+                                  ),
+                                  child: CustomPaint(
+                                    painter: CornerPainter(
+                                      isTop: isTop,
+                                      isLeft: isLeft,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Instruction Text
+                      Text(
+                        'Pull down to scan QR code',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -342,20 +466,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               builder: (context, scrollController) {
                 return Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.darkColor,
+                    color: const Color(0xFF1E1E1E),
                     borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
+                        const BorderRadius.vertical(top: Radius.circular(30)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 20,
                         offset: const Offset(0, -5),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      // Drag Handle
+                      // Drag Handle with Animation
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 12),
                         width: 40,
@@ -366,19 +490,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
 
-                      // Title
+                      // Title with Icon
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
+                          horizontal: 24,
                           vertical: 16,
                         ),
-                        child: Text(
-                          'Choose Action',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.grid_view_rounded,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Quick Actions',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -386,7 +526,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Expanded(
                         child: GridView.builder(
                           controller: scrollController,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
@@ -400,9 +543,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             return _buildActionButton(
                               icon: action['icon'],
                               label: action['title'],
-                              color: action['color'],
+                              gradient: action['gradient'],
                               onTap: () {
-                                // Handle action tap
+                                // Handle action
                               },
                             );
                           },
@@ -419,60 +562,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCorner(int index) {
-    final isTop = index < 2;
-    final isLeft = index.isEven;
-    return Positioned(
-      top: isTop ? -2 : null,
-      bottom: !isTop ? -2 : null,
-      left: isLeft ? -2 : null,
-      right: !isLeft ? -2 : null,
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: AppTheme.primaryColor,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(isTop && isLeft ? 8 : 0),
-            topRight: Radius.circular(isTop && !isLeft ? 8 : 0),
-            bottomLeft: Radius.circular(!isTop && isLeft ? 8 : 0),
-            bottomRight: Radius.circular(!isTop && !isLeft ? 8 : 0),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildActionButton({
     required IconData icon,
     required String label,
-    required Color color,
+    required List<Color> gradient,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradient,
           ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient[0].withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 32,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -485,4 +618,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+class CornerPainter extends CustomPainter {
+  final bool isTop;
+  final bool isLeft;
+
+  CornerPainter({required this.isTop, required this.isLeft});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final path = Path();
+    if (isTop && isLeft) {
+      path.moveTo(size.width, 0);
+      path.lineTo(0, 0);
+      path.lineTo(0, size.height);
+    } else if (isTop && !isLeft) {
+      path.moveTo(0, 0);
+      path.lineTo(size.width, 0);
+      path.lineTo(size.width, size.height);
+    } else if (!isTop && isLeft) {
+      path.moveTo(0, 0);
+      path.lineTo(0, size.height);
+      path.lineTo(size.width, size.height);
+    } else {
+      path.moveTo(size.width, 0);
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
